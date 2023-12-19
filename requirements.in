@@ -1,0 +1,12 @@
+aiosmtpd
+bootstrap-flask
+email-validator
+flask
+flask-wtf
+flask-login
+flask-moment
+flask-mailman
+flask-sqlalchemy
+flask-httpauth
+pyjwt
+rq

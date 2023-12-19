@@ -1,0 +1,8 @@
+{% extends 'base.html' %}{% from 'bootstrap5/pagination.html' import
+render_pager %}{% block content %}
+<h3 class="mb-3">Search Results</h3>
+{% if posts.items | length %}
+<div>{% for post in posts %} {% include '_post.html' %} {% endfor %}</div>
+{{ render_pager(posts) }} {% else %}
+<p>There is no results for "{{ q }}".</p>
+{% endif %} {% endblock %}

@@ -1,0 +1,30 @@
+<div class="d-flex gap-2">
+  <div>
+    <img src="{{ user.avatar(64) }}">
+  </div>
+  <div>
+    <p><a href="{{ url_for('users.profile', username=user.username) }}">{{ user.username }}</a></p>
+    {% if user.about_me %}<p>{{ user.about_me }}</p>{% endif %}
+    {% if user.last_seen %}
+    <p>Last seen on: {{ moment(user.last_seen).format('lll') }}</p>
+    {% endif %}
+    <p>{{ user.followers_count }} followers, {{ user.following_count }} following.</p>
+    {% if user != current_user %}
+      {% if not current_user.is_following(user) %}
+      <p>
+        <form action="{{ url_for('users.follow', username=user.username) }}" method="post">
+          {{ g.empty_form.hidden_tag() }}
+          {{ g.empty_form.submit(value='Follow', class_='btn btn-outline-primary btn-sm') }}
+        </form>
+      </p>
+      {% else %}
+      <p>
+        <form action="{{ url_for('users.unfollow', username=user.username) }}" method="post">
+          {{ g.empty_form.hidden_tag() }}
+          {{ g.empty_form.submit(value='Unfollow', class_='btn btn-outline-primary btn-sm') }}
+        </form>
+      </p>
+      {% endif %}
+    {% endif %}
+  </div>
+</div>

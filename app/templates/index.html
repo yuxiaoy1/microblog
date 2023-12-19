@@ -1,0 +1,12 @@
+{% extends 'base.html' %} {% from 'bootstrap5/form.html' import render_form %}{%
+from 'bootstrap5/pagination.html' import render_pager %} {% block content %}
+<h3 class="mb-3">Hi, {{ current_user.username }}</h3>
+{% if form %}
+<div class="row mb-3">
+  <div class="col-md-6">{{ render_form(form) }}</div>
+</div>
+{% endif %} {% if posts.items | length %}
+<div>{% for post in posts %} {% include '_post.html' %} {% endfor %}</div>
+{{ render_pager(posts) }} {% else %}
+<p>There is nothing here.</p>
+{% endif %} {% endblock %}

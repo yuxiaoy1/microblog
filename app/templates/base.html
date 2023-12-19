@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    {% if title %}
+    <title>{{ title }} - Microblog</title>
+    {% else %}
+    <title>Welcome to Microblog</title>
+    {% endif %} {{ bootstrap.load_css() }}
+  </head>
+  <body>
+    <nav class="navbar navbar-expand-lg bg-body-tertiary border-bottom mb-4">
+      <div class="container">
+        <a class="navbar-brand" href="{{ url_for('main.index') }}">Microblog</a>
+        <button
+          class="navbar-toggler"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#navbarSupportedContent"
+          aria-controls="navbarSupportedContent"
+          aria-expanded="false"
+          aria-label="Toggle navigation"
+        >
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+          <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+            <li class="nav-item">
+              <a
+                class="nav-link active"
+                aria-current="page"
+                href="{{ url_for('main.index') }}"
+                >Home</a
+              >
+            </li>
+            <li class="nav-item">
+              <a
+                class="nav-link active"
+                aria-current="page"
+                href="{{ url_for('main.explore') }}"
+                >Explore</a
+              >
+            </li>
+            {% if g.search_form %}
+            <li class="nav-item">
+              <form
+                action="{{ url_for('main.search') }}"
+                method="get"
+                class="navbar-form navbar-left"
+              >
+                <div class="form-group">
+                  {{ g.search_form.q(size=20, class='form-control',
+                  placeholder=g.search_form.q.label.text) }}
+                </div>
+              </form>
+            </li>
+            {% endif %}
+          </ul>
+          <ul class="navbar-nav">
+            {% if current_user.is_anonymous %}
+            <li class="nav-item">
+              <a
+                class="nav-link active"
+                aria-current="page"
+                href="{{ url_for('auth.login') }}"
+                >Login</a
+              >
+            </li>
+            {% else %}
+            <li class="nav-item">
+              <a
+                class="nav-link active"
+                aria-current="page"
+                href="{{ url_for('users.messages') }}"
+                >Messages{% set unread_message_count =
+                current_user.unread_message_count %}
+                <span
+                  id="message_count"
+                  class="badge text-bg-danger"
+                  style="visibility: {% if unread_message_count %}visible{% else %}hidden{% endif %};"
+                  >{{ unread_message_count }}</span
+                >
+              </a>
+            </li>
+            <li class="nav-item">
+              <a
+                class="nav-link active"
+                aria-current="page"
+                href="{{ url_for('users.profile', username=current_user.username) }}"
+                >Profile</a
+              >
+            </li>
+            <li class="nav-item">
+              <a
+                class="nav-link active"
+                aria-current="page"
+                href="{{ url_for('auth.logout') }}"
+                >Logout</a
+              >
+            </li>
+            {% endif %}
+          </ul>
+        </div>
+      </div>
+    </nav>
+    <div class="container">
+      {% if current_user.is_authenticated %} {% set tasks =
+      current_user.get_tasks_in_progress() %} {% if tasks %} {% for task in
+      tasks %}
+      <div class="alert alert-success" role="alert">
+        {{ task.description }}
+        <span id="{{ task.id }}-progress">{{ task.get_progress() }}</span>%
+      </div>
+      {% endfor %} {% endif %} {% endif %} {% for message in
+      get_flashed_messages() %}
+      <div class="alert alert-info alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="alert"
+          aria-label="Close"
+        ></button>
+      </div>
+      {% endfor %} {% block content %} {% endblock %}
+    </div>
+    {{ bootstrap.load_js() }} {{ moment.include_moment() }}
+  </body>
+  <script>
+    function init_popovers() {
+      document.querySelectorAll('[data-bs-toggle="popover"]').forEach( ele => {
+        new bootstrap.Popover(ele, {
+          content: 'Loading...',
+          trigger: 'hover focus',
+          html: true,
+          sanitize: false,
+          delay: {show: 500, hide: 0},
+          container: ele,
+          customClass: 'd-inline',
+        })
+        ele.addEventListener('show.bs.popover', async event => {
+          if (event.target.popupLoaded) return
+
+          let res = await fetch(`/user/${event.target.innerText.trim()}/popup`)
+          let data = await res.text()
+          let popover = bootstrap.Popover.getInstance(event.target)
+
+          if (popover && data) {
+            event.target.popupLoaded = true
+            popover.setContent({'.popover-body': data})
+            flask_moment_render_all()
+          }
+        })
+      })
+    }
+    document.addEventListener('DOMContentLoaded', init_popovers)
+
+    function set_message_count(count) {
+      let ele = document.getElementById('message_count')
+      ele.textContent = count
+      ele.style.visibility= count > 0 ? 'visible': 'hidden'
+    }
+
+    function set_task_progress(task_id, progress){
+      let ele = document.getElementById(`${task_id}-progress`)
+      if (!ele) return
+      ele.textContent = progress
+    }
+
+    {% if current_user.is_authenticated %}
+    function init_notifications(){
+      let since = 0
+      setInterval(async () => {
+        let res = await fetch('{{ url_for("users.notifications") }}?since=' + since)
+        let notifications = await res.json()
+        notifications.forEach(async n => {
+          if(n.name === 'unread_message_count'){
+            set_message_count(n.data)
+          }
+          if(n.name === 'task_progress'){
+            set_task_progress(n.data.task_id, n.data.progress)
+          }
+          since = n.timestamp
+        })
+      }, 10*1000)
+    }
+    document.addEventListener('DOMContentLoaded', init_notifications)
+    {% endif %}
+  </script>
+</html>
