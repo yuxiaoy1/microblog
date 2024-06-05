@@ -2,7 +2,6 @@ import rq
 from flask import Flask
 from redis import Redis
 
-from app import models
 from app.api import api
 from app.blueprints.auth import auth
 from app.blueprints.commands import commands
@@ -23,7 +22,6 @@ def create_app():
 
     register_extensions(app)
     register_blueprints(app)
-    register_shell_context(app)
 
     return app
 
@@ -43,14 +41,3 @@ def register_blueprints(app: Flask):
     app.register_blueprint(auth)
     app.register_blueprint(users, url_prefix="/user")
     app.register_blueprint(api, url_prefix="/api")
-
-
-def register_shell_context(app: Flask):
-    @app.shell_context_processor
-    def shell_context():
-        ctx = {"db": db}
-        for attr in dir(models):
-            model = getattr(models, attr)
-            if hasattr(model, "__bases__") and db.Model in getattr(model, "__bases__"):
-                ctx[attr] = model
-        return ctx
